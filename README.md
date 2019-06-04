@@ -1,3 +1,5 @@
+# IA - Project 3
+
 This project contains the basic structure to control a Pioneer P3DX robot on the V-REP simulator and read its sensors.
 
 # Running
