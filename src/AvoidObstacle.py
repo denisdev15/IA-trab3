@@ -4,6 +4,7 @@ import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import matplotlib.pyplot as plt
+import time
 
 # Antecedents objects
 distancesAntecedents = []
@@ -20,25 +21,34 @@ for i in range(8):
     # # distancesAntecedents[i]["longe"].view()
     # plt.show()
 
-vel_left['pos'] = fuzz.trimf(vel_left.universe, [0, 3, 3])
-vel_left['neg'] = fuzz.trimf(vel_left.universe, [-3, -3, 0])
-vel_right['pos'] = fuzz.trimf(vel_left.universe, [0, 2.8, 2.8])
-vel_right['neg'] = fuzz.trimf(vel_left.universe, [-3, -3, 0])
+vel_left['pos_fast'] = fuzz.trimf(vel_left.universe, [1, 5, 5])
+vel_left['pos_slow'] = fuzz.trimf(vel_left.universe, [0, 1.5, 1.5])
+vel_left['neg_fast'] = fuzz.trimf(vel_left.universe, [-5, -5, -1])
+vel_left['neg_slow'] = fuzz.trimf(vel_left.universe, [-1.5, -1.5, 0])
+vel_right['pos_fast'] = fuzz.trimf(vel_left.universe, [1, 4.8, 4.8])
+vel_right['pos_slow'] = fuzz.trimf(vel_left.universe, [0, 1.3, 1.3])
+vel_right['neg_fast'] = fuzz.trimf(vel_left.universe, [-5, -5, -1])
+vel_right['neg_slow'] = fuzz.trimf(vel_left.universe, [-1.5, -1.5, 0])
 
-rule1 = ctrl.Rule(distancesAntecedents[0]['perto'] | distancesAntecedents[1]['perto'] | distancesAntecedents[2]['perto'] | distancesAntecedents[3]['perto'], vel_right['neg'])
-rule2 = ctrl.Rule(distancesAntecedents[0]['perto'] | distancesAntecedents[1]['perto'] | distancesAntecedents[2]['perto'] | distancesAntecedents[3]['perto'], vel_left['pos'])
-rule3 = ctrl.Rule(distancesAntecedents[4]['perto'] | distancesAntecedents[5]['perto'] | distancesAntecedents[6]['perto'] | distancesAntecedents[7]['perto'], vel_right['pos'])
-rule4 = ctrl.Rule(distancesAntecedents[4]['perto'] | distancesAntecedents[5]['perto'] | distancesAntecedents[6]['perto'] | distancesAntecedents[7]['perto'], vel_left['neg'])
-rule5 = ctrl.Rule(distancesAntecedents[0]['longe'] & distancesAntecedents[1]['longe'] & distancesAntecedents[2]['longe'] & distancesAntecedents[3]['longe'] & distancesAntecedents[4]['longe'] & distancesAntecedents[5]['longe'] & distancesAntecedents[6]['longe'] & distancesAntecedents[7]['longe'], vel_right['pos'])
-rule6 = ctrl.Rule(distancesAntecedents[0]['longe'] & distancesAntecedents[1]['longe'] & distancesAntecedents[2]['longe'] & distancesAntecedents[3]['longe'] & distancesAntecedents[4]['longe'] & distancesAntecedents[5]['longe'] & distancesAntecedents[6]['longe'] & distancesAntecedents[7]['longe'], vel_left['pos'])
-# rule7 = ctrl.Rule(distancesAntecedents[4]['muito_perto'] & distancesAntecedents[5]['muito_perto'], vel_left['neg'])
-# rule8 = ctrl.Rule(distancesAntecedents[4]['muito_perto'] & distancesAntecedents[5]['muito_perto'], vel_right['neg'])
+# vel_left.view()
+# vel_right.view()
 
-avoid_obstacle_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6])
+# plt.show()
+
+
+rule1 = ctrl.Rule(distancesAntecedents[3]['perto'] | distancesAntecedents[4]['perto'], vel_left['pos_fast'])
+rule2 = ctrl.Rule(distancesAntecedents[3]['perto'] | distancesAntecedents[4]['perto'], vel_right['neg_fast'])
+rule3 = ctrl.Rule(distancesAntecedents[0]['perto'] | distancesAntecedents[1]['perto'] | distancesAntecedents[2]['perto'], vel_right['neg_slow'])
+rule4 = ctrl.Rule(distancesAntecedents[0]['perto'] | distancesAntecedents[1]['perto'] | distancesAntecedents[2]['perto'], vel_left['pos_slow'])
+rule5 = ctrl.Rule(distancesAntecedents[5]['perto'] | distancesAntecedents[6]['perto'] | distancesAntecedents[7]['perto'], vel_right['pos_slow'])
+rule6 = ctrl.Rule(distancesAntecedents[5]['perto'] | distancesAntecedents[6]['perto'] | distancesAntecedents[7]['perto'], vel_left['neg_slow'])
+rule7 = ctrl.Rule(distancesAntecedents[0]['longe'] & distancesAntecedents[1]['longe'] & distancesAntecedents[2]['longe'] & distancesAntecedents[3]['longe'] & distancesAntecedents[4]['longe'] & distancesAntecedents[5]['longe'] & distancesAntecedents[6]['longe'] & distancesAntecedents[7]['longe'], vel_right['pos_fast'])
+rule8 = ctrl.Rule(distancesAntecedents[0]['longe'] & distancesAntecedents[1]['longe'] & distancesAntecedents[2]['longe'] & distancesAntecedents[3]['longe'] & distancesAntecedents[4]['longe'] & distancesAntecedents[5]['longe'] & distancesAntecedents[6]['longe'] & distancesAntecedents[7]['longe'], vel_left['pos_fast'])
+
+avoid_obstacle_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8])
 avoid_obstacle = ctrl.ControlSystemSimulation(avoid_obstacle_ctrl)
 
-
-def fuzzy(dist, vel):
+def fuzzy(dist):
     i=0
     print('dist:', dist)
     for d in dist:
@@ -50,7 +60,7 @@ def fuzzy(dist, vel):
 robot = Robot()
 while(robot.get_connection_status() != -1):
     us_distances = robot.read_ultrassonic_sensors()
-    vel = fuzzy(us_distances[:8], 3) #Using only the 8 frontal sensors
+    vel = fuzzy(us_distances[:8]) #Using only the 8 frontal sensors
     print(vel)
     robot.set_left_velocity(vel[0])
     robot.set_right_velocity(vel[1])
