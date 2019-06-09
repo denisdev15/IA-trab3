@@ -18,8 +18,8 @@ direction['error_left'] = fuzz.trimf(direction.universe, [-math.pi, -math.pi, 0]
 direction['error_right'] = fuzz.trimf(direction.universe, [0, math.pi, math.pi])
 direction['no_error'] = fuzz.trimf(direction.universe, [-0.2, 0, 0.2])
 goal_distance = ctrl.Antecedent(np.arange(0, 500, 0.01), 'goal_distance')
-goal_distance['perto'] = fuzz.trimf(goal_distance.universe, [0, 0, 0.2])
-goal_distance['longe'] = fuzz.trapmf(goal_distance.universe, [0.2, 1, 500, 500])
+goal_distance['perto'] = fuzz.trimf(goal_distance.universe, [0, 0, 0.05])
+goal_distance['longe'] = fuzz.trapmf(goal_distance.universe, [0.05, 1, 500, 500])
 
 for i in range(8):
     distancesAntecedents[i]["perto"] = fuzz.trapmf(distancesAntecedents[i].universe, [0, 0, 0.8, 2])
@@ -63,6 +63,31 @@ go_to_goal = ctrl.ControlSystemSimulation(go_to_goal_ctrl)
 avoid_obstacle_ctrl = ctrl.ControlSystem([rule11, rule12, rule13, rule14, rule15, rule16, rule17, rule18])
 avoid_obstacle = ctrl.ControlSystemSimulation(avoid_obstacle_ctrl)
 
+positions = [[], []]
+velocities_left = []
+velocities_right = []
+distances = []
+direction_error = []
+routines = []
+
+def get_info_to_plot_avoid_obstacle(vel, position, it):
+    if it % 50 == 0:
+        positions[0].append(position[0])
+        positions[1].append(position[1])
+        velocities_left.append(vel[0])
+        velocities_right.append(vel[1])
+
+def get_info_to_plot(vel, distance, position, error, routine, it):
+    # if it % 50 == 0:
+    positions[0].append(position[0])
+    positions[1].append(position[1])
+    velocities_left.append(vel[0])
+    velocities_right.append(vel[1])
+    distances.append(distance)
+    direction_error.append(error)
+    routines.append(routine)
+
+
 def fuzzyGoToGoal(error, distance):
     go_to_goal.input['direction'] = error
     go_to_goal.input['goal_distance'] = distance
@@ -76,7 +101,8 @@ def fuzzyAvoidObstacle(dist):
     avoid_obstacle.compute()
     return [avoid_obstacle.output['vel_left'], avoid_obstacle.output['vel_right']]
 
-goal = [-4.7, 2.3]
+# goal = [0, 0]
+goal = [-6.325, 5.925]
 
 def isClose(distances):
     for i, d in enumerate(distances):
@@ -91,28 +117,64 @@ def isClose(distances):
     return False
 
 robot = Robot()
+i=0
 while(robot.get_connection_status() != -1):
     us_distances = robot.read_ultrassonic_sensors()
+    position = robot.get_current_position()
+    orientation = robot.get_current_orientation()
+    distance = helper.euclidian_distance(position[:2], goal)
+    angle = helper.diff_angle(goal, position)
+    error = orientation[2] - angle + math.pi
+    if error > math.pi:
+        error = 2*math.pi - error
+        error *= -1
+    if error < -math.pi:
+        error += 2*math.pi
+
     if isClose(us_distances[:8]):
-        print("Close")
-        vel = fuzzyAvoidObstacle(us_distances[:8])    
+        vel = fuzzyAvoidObstacle(us_distances[:8])
+        get_info_to_plot(vel, distance, position, error, 0, i)
     else:
-        print("Go to goal")
-        orientation = robot.get_current_orientation()
-        position = robot.get_current_position()
-        angle = helper.diff_angle(goal, position)
+        vel = fuzzyGoToGoal(error, distance)
+        get_info_to_plot(vel, distance, position, error, 1, i)
 
-        diff = orientation[2] - angle + math.pi
-        if diff > math.pi:
-            diff = 2*math.pi - diff
-            diff *= -1
-        if diff < -math.pi:
-            diff += 2*math.pi
-
-        distance = helper.euclidian_distance(position[:2], goal)
-
-        vel = fuzzyGoToGoal(diff, distance) #Using only the 8 frontal sensors
-
-    # print(vel)
     robot.set_left_velocity(vel[0])
     robot.set_right_velocity(vel[1])
+    i += 1
+
+plt.plot(positions[0], positions[1])
+plt.plot(positions[0][0], positions[1][0], 'go', label="Posição Inicial")
+plt.plot(goal[0], goal[1], 'gx', label="Objetivo")
+plt.plot(positions[0][-1], positions[1][-1], 'rx', label="Posição Final")
+plt.title('Posição do robô')
+plt.legend()
+plt.show()
+
+plt.plot(velocities_left, 'b', label='Motor Esquerdo')
+plt.plot(velocities_right, 'r', label='Motor Direito')
+plt.title('Velocidade dos motores (rad/s) por iteração')
+plt.legend()
+plt.show()
+
+plt.plot(distances)
+plt.title('Distância para o objetivo (m)')
+plt.show()
+
+fig, ax1 = plt.subplots()
+
+color = 'tab:red'
+ax1.set_xlabel('Iterações')
+ax1.set_ylabel('Distância para o objetivo (m)', color=color)
+ax1.plot(distances, color=color)
+ax1.plot(routines, 'g', label='Rotina utilizada:\nAvoidObstacle - 0\nGotoGoal - 1')
+ax1.tick_params(axis='y', labelcolor=color)
+
+ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+color = 'tab:blue'
+ax2.set_ylabel('Erro na direção para o objetivo (radianos)', color=color)  # we already handled the x-label with ax1
+ax2.plot(direction_error, color=color)
+ax2.tick_params(axis='y', labelcolor=color)
+
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.legend()
+plt.show()
