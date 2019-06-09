@@ -5,7 +5,7 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import matplotlib.pyplot as plt
 import time
-import angles
+import helper
 import math
 
 # Antecedents objects
@@ -51,27 +51,17 @@ goal = [0, 0]
 robot = Robot()
 while(robot.get_connection_status() != -1):
     orientation = robot.get_current_orientation()
-    # print(orientation[2])
-    # gamma = angles.convert_degree_to_rad(orientation[2])
-
     position = robot.get_current_position()
-    angle = angles.diff_angle(goal, position)
+    angle = helper.diff_angle(goal, position)
 
-    diff = orientation[2] - angle + math.pi
-    print(angle, orientation[2])
-    print(diff)
-    if diff > math.pi:
-        diff = 2*math.pi - diff
-        diff *= -1
-    if diff < -math.pi:
-        diff += 2*math.pi
-    print(diff)
+    error = orientation[2] - angle + math.pi
+    if error > math.pi:
+        error = 2*math.pi - error
+        error *= -1
+    if error < -math.pi:
+        error += 2*math.pi
 
-    distance = angles.euclidian_distance(position[:2], goal)
-    # print(angle, orientation[2], diff, distance)
-
-    vel = fuzzy(diff, distance) #Using only the 8 frontal sensors
-    print(vel)
+    distance = helper.euclidian_distance(position[:2], goal)
+    vel = fuzzy(error, distance) #Using only the 8 frontal sensors
     robot.set_left_velocity(vel[0])
     robot.set_right_velocity(vel[1])
-    # time.sleep(10)

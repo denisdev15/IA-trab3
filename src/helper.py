@@ -8,9 +8,3 @@ def diff_angle(v1, v2):
 
 def euclidian_distance(x, y):
     return math.sqrt(sum([(a - b) ** 2 for a, b in zip(x, y)]))
-
-
-# v1 = np.array([0,0])
-# v2 = np.array([1,1])
-
-# print(diff_angle(v1, v2))
