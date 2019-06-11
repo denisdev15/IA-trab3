@@ -75,11 +75,8 @@ plt.plot(positions[0][-1], positions[1][-1], 'rx')
 plt.title('Posição do robô')
 plt.show()
 
-plt.plot(velocities_left)
-plt.title('Velocidade motor esquerdo')
-plt.show()
-
-plt.plot(velocities_right)
-plt.title('Velocidade motor direito')
+plt.plot(velocities_left, 'b', label='Motor Esquerdo')
+plt.plot(velocities_right, 'g', label='Motor Direito')
+plt.title('Velocidade dos motores (rad/s)')
 plt.show()
 

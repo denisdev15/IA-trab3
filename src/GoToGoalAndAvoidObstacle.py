@@ -37,6 +37,7 @@ vel_right['pos_slow'] = fuzz.trimf(vel_left.universe, [0, 1.5, 1.5])
 vel_right['neg_fast'] = fuzz.trimf(vel_left.universe, [-4, -4, -1])
 vel_right['neg_slow'] = fuzz.trimf(vel_left.universe, [-1.5, -1.5, 0])
 
+# go to goal rules
 rule1 = ctrl.Rule(direction['error_left'] & goal_distance['longe'], vel_left['neg_fast'])
 rule2 = ctrl.Rule(direction['error_left'] & goal_distance['longe'], vel_right['pos_fast'])
 rule3 = ctrl.Rule(direction['error_right'] & goal_distance['longe'], vel_right['neg_fast'])
@@ -48,6 +49,7 @@ rule8 = ctrl.Rule(goal_distance['perto'], vel_right['neg_slow'])
 rule9 = ctrl.Rule(goal_distance['perto'], vel_left['neg_slow'])
 rule10 = ctrl.Rule(goal_distance['perto'], vel_left['pos_slow'])
 
+# Avoid obstacle rules
 rule11 = ctrl.Rule(distancesAntecedents[1]['perto'] | distancesAntecedents[2]['perto'] | distancesAntecedents[3]['perto'], vel_left['pos_fast'])
 rule12 = ctrl.Rule(distancesAntecedents[1]['perto'] | distancesAntecedents[2]['perto'] | distancesAntecedents[3]['perto'], vel_right['neg_fast'])
 rule13 = ctrl.Rule(distancesAntecedents[4]['perto'] | distancesAntecedents[5]['perto'] | distancesAntecedents[6]['perto'], vel_right['pos_fast'])
@@ -83,7 +85,10 @@ def fuzzy(error, goal_distance, distances):
     return [go_to_goal.output['vel_left'], go_to_goal.output['vel_right']]
 
 # goal = [0, 0]
-goal = [-5.175, 5.5]
+x = float(input("Insira as coordenadas de objetivo do robô.\nX: "))
+y = float(input("Y: "))
+goal = (x, y)
+print(goal)
 
 robot = Robot()
 i=0
@@ -140,5 +145,4 @@ ax2.plot(direction_error, color=color)
 ax2.tick_params(axis='y', labelcolor=color)
 
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.legend()
 plt.show()
